@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
 from models import db, User, File
@@ -11,7 +11,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 
 
-# Setup
+# --- DATABASE & LOGIN SETUP ---
 db.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -29,7 +29,7 @@ def load_user(user_id):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# --- AUTH ROUTES ---
+# --- AUTHENTICATION ROUTES ---
 
 @app.route('/')
 def index():
@@ -55,7 +55,7 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# --- USER MANAGEMENT (ADMIN ONLY) ---
+# --- ADMIN MANAGEMENT ---
 
 @app.route('/admin/create_user', methods=['GET', 'POST'])
 @login_required
@@ -82,7 +82,7 @@ def create_user():
             flash(f"User {username} created!")
     return render_template('create_user.html')
 
-# --- FILE CRUD ROUTES ---
+# --- FILE CRUD OPERATIONS ---
 
 @app.route('/dashboard')
 @login_required
@@ -114,6 +114,18 @@ def upload_file():
     else:
         flash("File type not allowed!", "danger")
     return redirect(url_for('dashboard'))
+
+@app.route('/download/<filename>')
+@login_required
+def download_file(filename):
+    file_record = File.query.filter_by(filename=filename).first_or_404()
+    
+    # Permission check: Only owner or admin can download
+    if current_user.role != 'admin' and file_record.user_id != current_user.id:
+        flash("Unauthorized download attempt!", "danger")
+        return redirect(url_for('dashboard'))
+
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/rename/<int:file_id>', methods=['POST'])
 @login_required
