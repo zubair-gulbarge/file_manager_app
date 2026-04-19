@@ -58,3 +58,26 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all() # Generates the database file
     app.run(debug=True)
+
+
+@app.route('/delete/<int:file_id>')
+@login_required
+def delete_file(file_id):
+    file_to_delete = File.query.get_or_404(file_id)
+    
+    # Permission Check
+    if current_user.role != 'admin' and file_to_delete.user_id != current_user.id:
+        flash("You do not have permission to delete this file.")
+        return redirect(url_for('dashboard'))
+
+    # 1. Delete from Filesystem
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_to_delete.filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    # 2. Delete from Database
+    db.session.delete(file_to_delete)
+    db.session.commit()
+    
+    flash("File deleted successfully.")
+    return redirect(url_for('dashboard'))

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Dashboard</title>
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-white shadow-sm p-4 flex justify-between items-center px-10">
+        <h1 class="text-xl font-bold text-gray-800">File Manager <span class="text-sm font-normal text-gray-500">({{ current_user.role }})</span></h1>
+        <a href="/logout" class="text-red-500 hover:underline">Logout</a>
+    </nav>
+
+    <div class="container mx-auto mt-10 p-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm mb-8">
+            <h2 class="text-lg font-semibold mb-4">Upload New File</h2>
+            <form action="/upload" method="POST" enctype="multipart/form-data" class="flex gap-4">
+                <input type="file" name="file" class="border p-2 rounded w-full">
+                <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">Upload</button>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="p-4">Filename</th>
+                        <th class="p-4">Owner</th>
+                        <th class="p-4">Date</th>
+                        <th class="p-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for file in files %}
+                    <tr class="border-t">
+                        <td class="p-4 font-medium">{{ file.filename }}</td>
+                        <td class="p-4 text-gray-600">{{ file.owner.username }}</td>
+                        <td class="p-4 text-gray-500 text-sm">{{ file.upload_date.strftime('%Y-%m-%d') }}</td>
+                        <td class="p-4 text-right">
+                            <a href="/delete/{{ file.id }}" class="text-red-600 hover:text-red-800 font-bold" onclick="return confirm('Delete this file?')">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
